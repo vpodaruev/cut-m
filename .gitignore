@@ -1,0 +1,9 @@
+data/
+dist/
+build/
+tools/
+.ipynb*/
+__pycache__/
+*.exe
+*.mp4
+*.spec
