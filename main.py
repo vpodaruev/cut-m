@@ -3,14 +3,13 @@
 import argparse
 import json5 as json
 import pathlib
+import traceback
 
 import cut
 import google_serve as gs
 import utils as ut
+import version as vrs
 
-
-# program version
-version = "1.0-dev"
 
 description = """
 Download video from Google Drive and slice it into fragments
@@ -36,23 +35,22 @@ def parse_args(parser):
     return args
 
 
-if __name__ == "__main__":
-    mime_type_all = {"video"}
-
+def main():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--config", type=pathlib.Path,
                         default=ut.application_path()/"config.json",
                         help="file with slicing settings in JSON5 format"
                              " [default: %(default)s]")
     parser.add_argument("--version", action="version",
-                        version=f"%(prog)s {version}")
+                        version=f"%(prog)s {vrs.get_version()}")
 
     args = parse_args(parser)
     cut.ffmpeg = ut.as_command(args["ffmpeg"])
     ut.set_log_level(args["log_level"])
-    ut.logger().debug(f"version is '{version}'")
+    ut.logger().debug(f"version is '{vrs.get_version()}'")
     ut.logger().debug(f"arguments - {args}")
 
+    stat = ut.Statistics()
     auth_token = ut.checked_path(args["auth_token"])
     gd = gs.get_drive(auth_token)
     tempdir = pathlib.Path(args["temporary_dir"])
@@ -84,7 +82,6 @@ if __name__ == "__main__":
     fragdir = tempdir/"fragments"
     fragdir.mkdir(exist_ok=True)
 
-    stat = ut.Statistics()
     w = len(f"{n_tm_codes}")  # for pretty print
     for tm in tm_codes:
         frag = cut.make_filename(video, tm, fragdir)
@@ -121,3 +118,14 @@ if __name__ == "__main__":
             print(tm.name, flush=True)
 
     stat.report()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        exc = traceback.format_exc()
+        ut.logger().critical(exc)
+        print(exc)
+
+    input("Press Enter to exit...")

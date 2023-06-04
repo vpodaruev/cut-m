@@ -7,9 +7,6 @@ import pathlib
 import shutil
 import sys
 import time
-from urllib.parse import urlparse, parse_qs
-
-from PyQt6.QtCore import QProcess
 
 
 def humansize(nbytes):
@@ -73,7 +70,7 @@ log_level = {
 }
 
 
-logging.basicConfig(filename="cut-massively.log", encoding="utf-8",
+logging.basicConfig(filename="cut-m.log", encoding="utf-8",
                     format="%(asctime)s:%(module)s:%(levelname)s: %(message)s",
                     level=logging.CRITICAL)
 
@@ -92,7 +89,8 @@ def set_log_level(name):
 
 
 def as_command(s):
-    """Return command `s` as pathlib.Path object if available from the command line"""
+    """Return command `s` as pathlib.Path object
+       if available from the command line"""
     cmd = pathlib.Path(s)
     if shutil.which(s) is not None:
         return cmd
@@ -135,68 +133,6 @@ def to_seconds(hhmmss):
     return s
 
 
-def from_ffmpeg_time(hhmmss):
-    hh, mm, ss = [float(x) for x in hhmmss.split(":")]
-    return (hh*60 + mm)*60 + ss
-
-
 def as_suffix(start, end):
     start, end = start.replace(":", "."), end.replace(":", ".")
     return f"_{start}-{end}"
-
-
-def decode(msg):
-    return bytes(msg).decode("utf8", "replace")
-
-
-_time_pat = re.compile(r"^([\d]+)[s]*$")
-
-
-def get_url_time(url):
-    if qs := urlparse(url).query:
-        query = parse_qs(qs)
-        value = query["t"][0] if "t" in query else ""
-        if m := _time_pat.match(value):
-            return m.group(1)
-    return None
-
-
-_err_pat = re.compile(r"error", re.IGNORECASE)
-
-
-def has_error(msg):
-    return _err_pat.search(msg) is not None
-
-
-class CalledProcessError(RuntimeError):
-    def __init__(self, process, msg):
-        super().__init__(msg + f"\n{process.program()} {process.arguments()}")
-
-
-class TimeoutExpired(CalledProcessError):
-    def __init__(self, process):
-        super().__init__(process, "Timeout expired, no response"
-                                  " / Тайм-аут итёк, ответа нет")
-
-
-class CalledProcessFailed(CalledProcessError):
-    def __init__(self, process, msg=None):
-        if not msg:
-            msg = "Process finished with errors" \
-                  " / Процесс завершился с ошибками"
-        super().__init__(process, msg)
-
-
-def check_output(process):
-    err = decode(process.readAllStandardError())
-    if has_error(err):
-        pass
-    elif process.exitStatus() != QProcess.ExitStatus.NormalExit:
-        err = f"Exit with error code {process.error()}. " + err
-    else:
-        if err:
-            logger().warning(err)
-        out = decode(process.readAllStandardOutput())
-        logger().debug(out)
-        return out
-    raise CalledProcessFailed(process, err)

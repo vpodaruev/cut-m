@@ -1,0 +1,5 @@
+gspread
+json5
+pathvalidate
+pydrive2
+tqdm
