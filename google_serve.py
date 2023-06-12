@@ -103,10 +103,10 @@ def meta_str(mime, title, size):
     return f"{ut.humansize(size)} {mime} - {title}"
 
 
-def download_video(id, path, indent=""):
+def download_video(id, path, auth_token, indent=""):
     """Access a Google Drive file and download it on disk at path location"""
     ut.logger().debug(f"resource id is '{id}'")
-    file = _gd.CreateFile({"id": id})
+    file = get_drive(auth_token).CreateFile({"id": id})
     if not is_video(file):
         raise RuntimeError("not a video file (id={id})")
 
