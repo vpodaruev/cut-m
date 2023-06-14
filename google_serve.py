@@ -85,16 +85,9 @@ def is_video(file):
     return file["mimeType"].startswith("video")
 
 
-def is_folder(id):
-    """Return true if Google disk resource with `id` is folder"""
-    r = _gd.CreateFile({"id": id})
-    return r["mimeType"].endswith("folder")
-
-
 def get_meta(file):
     mime = file["mimeType"]
     title = file["title"]
-    ut.logger().debug(f"try file '{mime} - {title}'")
     size = int(file["fileSize"])
     return mime, title, size
 
@@ -103,45 +96,41 @@ def meta_str(mime, title, size):
     return f"{ut.humansize(size)} {mime} - {title}"
 
 
-def download_video(id, path, auth_token, indent=""):
-    """Access a Google Drive file and download it on disk at path location"""
-    ut.logger().debug(f"resource id is '{id}'")
+def get_video_by(id, auth_token):
     file = get_drive(auth_token).CreateFile({"id": id})
+    file.FetchMetadata(fields="userPermission,mimeType,title,fileSize")
+    if file['userPermission'].get("id", None) != "me":
+        raise RuntimeError("no access to Google Drive file (id={id})")
     if not is_video(file):
         raise RuntimeError("not a video file (id={id})")
 
-    mime, title, size = get_meta(file)
-    print('>', meta_str(mime, title, size))
-    target = path / pv.sanitize_filename(title)
-    if not target.exists() or size != target.stat().st_size:
-        ut.logger().debug(f"{ut.humansize(size)} {mime} - '{title}'")
-        ut.logger().debug("downloading...")
-        try:
-            progress_bar = tqdm.tqdm(total=size, unit='B', unit_scale=True)
-
-            def download_progress(current_size, total_size):
-                progress_bar.update(current_size - progress_bar.n)
-
-            file.GetContentFile(target.as_posix(), callback=download_progress)
-            progress_bar.close()
-        except (ApiRequestError, FileNotUploadedError) as e:
-            ut.logger().exception(f"failed to download file '{title}', '{e}'")
-            raise
-    else:
-        ut.logger().debug("skip")
-    return target
+    return file
 
 
-def list_videos(id):
+def download_video(file, target):
+    """Access a Google Drive `file` and download it on disk at `target` location"""
+    ut.logger().debug("downloading...")
+    try:
+        size = int(file["fileSize"])
+        progress_bar = tqdm.tqdm(total=size, unit='B', unit_scale=True)
+
+        def download_progress(current_size, total_size):
+            progress_bar.update(current_size - progress_bar.n)
+
+        file.GetContentFile(target.as_posix(), callback=download_progress)
+        progress_bar.close()
+    except (ApiRequestError, FileNotUploadedError) as e:
+        ut.logger().exception(f"failed to download file '{file['title']}', '{e}'")
+        raise
+
+
+def folder_videos(id, auth_token):
     """Return video files list of Google Drive folder with `id`"""
     videos = {}
     query = f"'{id}' in parents and trashed=false" \
             " and mimeType contains 'video'"
-    for file in _gd.ListFile({'q': query}).GetList():
+    for file in get_drive(auth_token).ListFile({'q': query}).GetList():
         title = file["title"]
-        ut.logger().debug(f"try file '{title}'")
-        size = int(file["fileSize"])
-        ut.logger().debug(f"file size '{size}'")
         videos.update({f"{title}": file})
     return videos
 

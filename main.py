@@ -69,8 +69,18 @@ class Main:
             return self._video_file
 
         url = self.args["video_url"]
-        self._video_file = gs.download_video(gs.as_id(url), self.tempdir(), self.auth_token)
-        return self._video_file
+        file = gs.get_video_by(gs.as_id(url), self.auth_token)
+
+        mime, title, size = gs.get_meta(file)
+        print('>', gs.meta_str(mime, title, size))
+
+        target = self.tempdir() / gs.as_video_name(title)
+        if not target.exists() or size != target.stat().st_size:
+            gs.download_video(file, target)
+        else:
+            print("Already loaded/Уже загружено")
+        self._video_file = target
+        return target
 
     def time_codes(self):
         if self._tm_codes:
@@ -93,7 +103,7 @@ class Main:
     def uploaded_fragments(self):
         # get list of fragments that are done
         outdir_id = gs.as_id(self.args["output_dir_url"])
-        return gs.list_videos(outdir_id)
+        return gs.folder_videos(outdir_id, self.auth_token)
 
     def fragments(self, stat, callback=None):
         if self._fragments:
