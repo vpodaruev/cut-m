@@ -4,22 +4,17 @@
      */
     video_url: "https://drive.google.com/file/d/xxx",
 
-    /* Google Drive folder URL where to upload fragments
-     * Ссылка на гугл-папку, куда загрузить фрагменты
-     */
-    output_dir_url: "https://drive.google.com/drive/folders/xxx",
-
     /* Google Drive worksheet URL to extract timings from
      * Ссылка на лист гугл-таблицы, откуда извлечь тайминг
      */
     worksheet_url: "https://docs.google.com/spreadsheets/d/xxx/edit#gid=yyy",
 
-    /* Number of rows in the table header
+    /* Number of rows in table header
      * Количество строк в шапке таблицы
      */
     n_head_rows: 2,
 
-    /* Row number of the header which contains the column names below
+    /* Row number of header which contains column names below
      * Номер строки шапки, который содержит имена колонок, приведённые ниже
      */
     head_row: 2,
@@ -28,12 +23,12 @@
      * Имена колонок таблицы, откуда извлечь тайминг
      */
     columns: {
-        /* Column where checked cells mark if the fragments are to be sliced
+        /* Column with checkboxes, where fragments to be cut are marked
          * Колонка с чек-боксами, где отмечены фрагменты, которые нужно вырезать
          */
         slice: "Нарезать ботом",
 
-        /* Column with begin time of fragments
+        /* Column with start time of fragments
          * Колонка с временем начала фрагментов
          */
         start: "Тайминг Начало",
@@ -58,6 +53,11 @@
         start_time: 0,
         end_time: 0,
     },
+
+    /* Google Drive folder URL where to upload fragments
+     * Ссылка на гугл-папку, куда загрузить фрагменты
+     */
+    output_dir_url: "https://drive.google.com/drive/folders/xxx",
 
     /* Whether or not to upload to Google Drive, useful for a slicing pre-test
      * Загружать или нет на гугл-диск, полезно для тестирования нарезки
